@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Week 1 - Consume API</title>
+  <script>
+    const completed = (response) => {
+      const data = JSON.parse(response.target.responseText);
+      document.getElementById('result').innerHTML = `Tipo de Cambio Dolares ${data.TipoCompraDolares}`;
+    };
+
+    const error = () => console.log(this.responseText);
+
+    function getExchange() {
+      const ajaxRequest = new XMLHttpRequest(); //AJAX
+      ajaxRequest.addEventListener("load", completed);
+      ajaxRequest.addEventListener("error", error);
+      ajaxRequest.open("GET", "http://localhost:3001/tipocambio");
+      ajaxRequest.send();
+    }
+  </script>
+</head>
+
+<body>
+  <button onclick="getExchange();">Tipo de Cambio</button>
+  <h3>Results:</h3>
+  <div id="result"></div>
+  <div id="currency_exchange"></div>
+
+  <select name="countries" id="countries">
+  </select>
+
+  <script>
+    let selectedCountryCode;
+    let countries;
+    document.getElementById('result').innerHTML = "Tipo de cambio";
+    const ajaxRequest = new XMLHttpRequest(); //AJAX
+    ajaxRequest.addEventListener("load", (e) => {
+
+      countries = JSON.parse(e.target.responseText);
+      let optionsHtml = "";
+      countries.forEach(country => {
+        // Verificar si el país tiene la propiedad 'currencies' y si contiene al menos una moneda
+        if (country.currencies && Object.keys(country.currencies).length > 0) {
+          const currencyKey = Object.keys(country.currencies)[0]; // Obtener la primera clave de moneda
+          const currency = country.currencies[currencyKey]; // Obtener el objeto de moneda correspondiente
+          const currencyName = currency.name; // Obtener el nombre de la moneda del objeto de moneda
+
+          optionsHtml += `<option>${country.cca3} | ${country.name.common} -> ${currencyName}</option>`;
+        } else {
+          // Si el país no tiene monedas disponibles, puedes manejar esa situación como desees
+          optionsHtml += `<option>${country.cca3} | ${country.name.common} -> (No currency)</option>`;
+        }
+      });
+      
+      document.getElementById("countries").innerHTML = optionsHtml;
+
+      // Obtener el primer elemento del dropdown
+      const countryCode = document.getElementById("countries").value;
+      selectedCountryCode = countryCode.split(' ')[0];
+      // Encontrar el país relacionado con el selectedCountryCode
+      let selectedCountry;
+
+      countries.forEach(country => {
+        if (country.cca3 === selectedCountryCode) {
+          selectedCountry = country;
+        }
+      });
+      const selectedCountryCurrencies = selectedCountry.currencies;
+      const firstCurrencyKey = Object.keys(selectedCountryCurrencies)[0];
+      const apiUrl = `https://cdn.jsdelivr.net/gh/fawazahmed0/currency-api@1/latest/currencies/${firstCurrencyKey.toLocaleLowerCase()}.json`;
+      
+    });
+    
+    ajaxRequest.addEventListener("error", ()=>{});
+    //ajaxRequest.open("GET", "https://restcountries.com/v3.1/all");
+    ajaxRequest.open("GET", "http://localhost:3001/paises");
+    ajaxRequest.send();
+
+    // Agregar un listener de eventos al dropdown
+    document.getElementById("countries").addEventListener("input", function() {
+      // Obtener el elemento seleccionado
+      const countryCode = this.value;
+      selectedCountryCode = countryCode.split(' ')[0];
+      
+
+      // Encontrar el país relacionado con el selectedCountryCode
+      let selectedCountry;
+
+      countries.forEach(country => {
+        if (country.cca3 === selectedCountryCode) {
+          selectedCountry = country;
+        }
+      });
+      const selectedCountryCurrencies = selectedCountry.currencies;
+      const firstCurrencyKey = Object.keys(selectedCountryCurrencies)[0];
+
+      const apiUrl = `https://cdn.jsdelivr.net/gh/fawazahmed0/currency-api@1/latest/currencies/${firstCurrencyKey.toLocaleLowerCase()}.json`;
+      fetch(apiUrl)
+      .then(response => response.json())
+      .then(data => {
+        // Get the value at index 1 (assuming it's always present)
+        const secondValue = Object.values(data)[1];
+
+        const result = `Tipo de cambio: "USD"-> ${secondValue.usd}, "EUR"-> ${secondValue.eur}`;
+
+        document.getElementById('result').innerHTML = result;
+      })
+      .catch(error => console.error("Error fetching data:", error));
+        });
+    
+  </script>
+</body>
+</html>
